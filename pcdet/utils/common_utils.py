@@ -5,6 +5,7 @@ import random
 import shutil
 import subprocess
 import SharedArray
+import sys
 
 import numpy as np
 import torch
@@ -59,7 +60,7 @@ def rotate_points_along_z(points, angle):
 
 def mask_points_by_range(points, limit_range):
     mask = (points[:, 0] >= limit_range[0]) & (points[:, 0] <= limit_range[3]) \
-           & (points[:, 1] >= limit_range[1]) & (points[:, 1] <= limit_range[4])
+        & (points[:, 1] >= limit_range[1]) & (points[:, 1] <= limit_range[4])
     return mask
 
 
@@ -76,8 +77,10 @@ def get_voxel_centers(voxel_coords, downsample_times, voxel_size, point_cloud_ra
     """
     assert voxel_coords.shape[1] == 3
     voxel_centers = voxel_coords[:, [2, 1, 0]].float()  # (xyz)
-    voxel_size = torch.tensor(voxel_size, device=voxel_centers.device).float() * downsample_times
-    pc_range = torch.tensor(point_cloud_range[0:3], device=voxel_centers.device).float()
+    voxel_size = torch.tensor(
+        voxel_size, device=voxel_centers.device).float() * downsample_times
+    pc_range = torch.tensor(
+        point_cloud_range[0:3], device=voxel_centers.device).float()
     voxel_centers = (voxel_centers + 0.5) * voxel_size + pc_range
     return voxel_centers
 
@@ -156,7 +159,8 @@ def init_dist_slurm(tcp_port, local_rank, backend='nccl'):
     node_list = os.environ['SLURM_NODELIST']
     num_gpus = torch.cuda.device_count()
     torch.cuda.set_device(proc_id % num_gpus)
-    addr = subprocess.getoutput('scontrol show hostname {} | head -n1'.format(node_list))
+    addr = subprocess.getoutput(
+        'scontrol show hostname {} | head -n1'.format(node_list))
     os.environ['MASTER_PORT'] = str(tcp_port)
     os.environ['MASTER_ADDR'] = addr
     os.environ['WORLD_SIZE'] = str(ntasks)
@@ -213,7 +217,8 @@ def merge_results_dist(result_part, size, tmpdir):
     os.makedirs(tmpdir, exist_ok=True)
 
     dist.barrier()
-    pickle.dump(result_part, open(os.path.join(tmpdir, 'result_part_{}.pkl'.format(rank)), 'wb'))
+    pickle.dump(result_part, open(os.path.join(
+        tmpdir, 'result_part_{}.pkl'.format(rank)), 'wb'))
     dist.barrier()
 
     if rank != 0:
@@ -233,7 +238,8 @@ def merge_results_dist(result_part, size, tmpdir):
 
 
 def scatter_point_inds(indices, point_inds, shape):
-    ret = -1 * torch.ones(*shape, dtype=point_inds.dtype, device=point_inds.device)
+    ret = -1 * torch.ones(*shape, dtype=point_inds.dtype,
+                          device=point_inds.device)
     ndim = indices.shape[-1]
     flattened_indices = indices.view(-1, ndim)
     slices = [flattened_indices[:, i] for i in range(ndim)]
@@ -246,7 +252,8 @@ def generate_voxel2pinds(sparse_tensor):
     batch_size = sparse_tensor.batch_size
     spatial_shape = sparse_tensor.spatial_shape
     indices = sparse_tensor.indices.long()
-    point_indices = torch.arange(indices.shape[0], device=device, dtype=torch.int32)
+    point_indices = torch.arange(
+        indices.shape[0], device=device, dtype=torch.int32)
     output_shape = [batch_size] + list(spatial_shape)
     v2pinds_tensor = scatter_point_inds(indices, point_indices, output_shape)
     return v2pinds_tensor
@@ -261,6 +268,7 @@ def sa_create(name, var):
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 

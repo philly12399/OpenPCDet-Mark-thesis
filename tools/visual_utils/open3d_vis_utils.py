@@ -7,6 +7,8 @@ import open3d
 import torch
 import matplotlib
 import numpy as np
+import open3d.visualization.gui as gui
+import open3d.visualization.rendering as rendering
 
 box_colormap = [
     [1, 1, 1],
@@ -28,7 +30,8 @@ def get_coor_colors(obj_labels):
     max_color_num = obj_labels.max()
 
     color_list = list(colors)[:max_color_num+1]
-    colors_rgba = [matplotlib.colors.to_rgba_array(color) for color in color_list]
+    colors_rgba = [matplotlib.colors.to_rgba_array(
+        color) for color in color_list]
     label_rgba = np.array(colors_rgba)[obj_labels]
     label_rgba = label_rgba.squeeze()[:, :3]
 
@@ -43,25 +46,27 @@ def draw_scenes(points, gt_boxes=None, ref_boxes=None, ref_labels=None, ref_scor
     if isinstance(ref_boxes, torch.Tensor):
         ref_boxes = ref_boxes.cpu().numpy()
 
-    vis = open3d.visualization.Visualizer()
-    vis.create_window()
+    app = gui.Application.instance
+    app.initialize()
 
-    vis.get_render_option().point_size = 1.0
-    vis.get_render_option().background_color = np.zeros(3)
+    vis = open3d.visualization.O3DVisualizer("Open3D - 3D Text", 1920, 1080)
+    # vis.show_settings = True
 
-    # draw origin
-    if draw_origin:
-        axis_pcd = open3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
-        vis.add_geometry(axis_pcd)
+    # Setting camera
+    vis.setup_camera(1000.0, [10., 0., 0.], [10., 0., 30.], [0., 0., 1.])
+    vis.show_skybox(False)
+    # vis.set_background([0., 0., 0., 1.], None)
+    vis.point_size = 1
 
     pts = open3d.geometry.PointCloud()
     pts.points = open3d.utility.Vector3dVector(points[:, :3])
 
-    vis.add_geometry(pts)
     if point_colors is None:
-        pts.colors = open3d.utility.Vector3dVector(np.ones((points.shape[0], 3)))
+        pts.colors = open3d.utility.Vector3dVector(
+            np.zeros((points.shape[0], 3)))
     else:
         pts.colors = open3d.utility.Vector3dVector(point_colors)
+    vis.add_geometry("Points", pts)
 
     if gt_boxes is not None:
         vis = draw_box(vis, gt_boxes, (0, 0, 1))
@@ -69,8 +74,8 @@ def draw_scenes(points, gt_boxes=None, ref_boxes=None, ref_labels=None, ref_scor
     if ref_boxes is not None:
         vis = draw_box(vis, ref_boxes, (0, 1, 0), ref_labels, ref_scores)
 
-    vis.run()
-    vis.destroy_window()
+    app.add_window(vis)
+    app.run()
 
 
 def translate_boxes_to_open3d_instance(gt_boxes):
@@ -108,9 +113,8 @@ def draw_box(vis, gt_boxes, color=(0, 1, 0), ref_labels=None, score=None):
         else:
             line_set.paint_uniform_color(box_colormap[ref_labels[i]])
 
-        vis.add_geometry(line_set)
-
-        # if score is not None:
-        #     corners = box3d.get_box_points()
-        #     vis.add_3d_label(corners[5], '%.2f' % score[i])
+        vis.add_geometry(f"BBoxes_{i}", line_set)
+        if score is not None and ref_labels is not None:
+            corners = box3d.get_box_points()
+            vis.add_3d_label(box3d.get_center(), f'{score[i]:.2f}')
     return vis
