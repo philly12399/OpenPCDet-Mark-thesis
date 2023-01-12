@@ -12,7 +12,7 @@ DATA_CONFIG:
               DB_INFO_PATH:
                   - kitti_dbinfos_train.pkl
               PREPARE: {
-                 filter_by_min_points: ['Cyclist:30', 'Car:50', 'Truck:50', Bus:100'],
+                 filter_by_min_points: ['Cyclist:30', 'Car:50', 'Truck:50', 'Bus:100'],
                 #  filter_by_difficulty: [-1],
               }
 
