@@ -1,0 +1,193 @@
+CLASS_NAMES: [Cyclist, Car, Truck, Bus]
+DATA_CONFIG:
+    DATA_AUGMENTOR:
+        AUG_CONFIG_LIST:
+        -   DATABASE_WITH_FAKELIDAR: false
+            DB_INFO_PATH: [kitti_dbinfos_train.pkl]
+            LIMIT_WHOLE_SCENE: false
+            NAME: gt_sampling
+            NUM_POINT_FEATURES: 4
+            PREPARE:
+                filter_by_min_points: [Cyclist:30, Car:50, Truck:50, Bus:100]
+            REMOVE_EXTRA_WIDTH: [0.0, 0.0, 0.0]
+            SAMPLE_GROUPS: [Cyclist:10, Car:15, Truck:10, Bus:2]
+            USE_ROAD_PLANE: false
+        -   ALONG_AXIS_LIST: [x]
+            NAME: random_world_flip
+        -   NAME: random_world_rotation
+            WORLD_ROT_ANGLE: [-0.78539816, 0.78539816]
+        -   NAME: random_world_scaling
+            WORLD_SCALE_RANGE: [0.95, 1.05]
+        DISABLE_AUG_LIST: [placeholder]
+    _BASE_CONFIG_: cfgs/dataset_configs/kitti_dbscan-lidar1.yaml
+MODEL:
+    BACKBONE_2D:
+        LAYER_NUMS: [5, 5]
+        LAYER_STRIDES: [1, 2]
+        NAME: BaseBEVBackbone
+        NUM_FILTERS: [128, 256]
+        NUM_UPSAMPLE_FILTERS: [256, 256]
+        UPSAMPLE_STRIDES: [1, 2]
+    BACKBONE_3D: {NAME: VoxelBackBone8x}
+    DENSE_HEAD:
+        ANCHOR_GENERATOR_CONFIG:
+        -   align_center: false
+            anchor_bottom_heights: [-0.6]
+            anchor_rotations: [0, 1.57]
+            anchor_sizes:
+            -   [1.88, 0.87, 1.79]
+            class_name: Cyclist
+            feature_map_stride: 8
+            matched_threshold: 0.5
+            unmatched_threshold: 0.35
+        -   align_center: false
+            anchor_bottom_heights: [-1.78]
+            anchor_rotations: [0, 1.57]
+            anchor_sizes:
+            -   [4.2, 1.89, 1.65]
+            class_name: Car
+            feature_map_stride: 8
+            matched_threshold: 0.6
+            unmatched_threshold: 0.45
+        -   align_center: false
+            anchor_bottom_heights: [-1.78]
+            anchor_rotations: [0, 1.57]
+            anchor_sizes:
+            -   [4.7, 1.92, 2.03]
+            class_name: Truck
+            feature_map_stride: 8
+            matched_threshold: 0.6
+            unmatched_threshold: 0.45
+        -   align_center: false
+            anchor_bottom_heights: [-1.78]
+            anchor_rotations: [0, 1.57]
+            anchor_sizes:
+            -   [12.23, 3.3, 3.27]
+            class_name: Bus
+            feature_map_stride: 8
+            matched_threshold: 0.6
+            unmatched_threshold: 0.45
+        CLASS_AGNOSTIC: false
+        DIR_LIMIT_OFFSET: 0.0
+        DIR_OFFSET: 0.78539
+        LOSS_CONFIG:
+            LOSS_WEIGHTS:
+                cls_weight: 1.0
+                code_weights: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+                dir_weight: 0.2
+                loc_weight: 2.0
+        NAME: AnchorHeadSingle
+        NUM_DIR_BINS: 2
+        TARGET_ASSIGNER_CONFIG: {BOX_CODER: ResidualCoder, MATCH_HEIGHT: false, NAME: AxisAlignedTargetAssigner,
+            NORM_BY_NUM_EXAMPLES: false, POS_FRACTION: -1.0, SAMPLE_SIZE: 512}
+        USE_DIRECTION_CLASSIFIER: true
+    MAP_TO_BEV: {NAME: HeightCompression, NUM_BEV_FEATURES: 256}
+    NAME: PVRCNN
+    PFE:
+        FEATURES_SOURCE: [bev, x_conv1, x_conv2, x_conv3, x_conv4, raw_points]
+        NAME: VoxelSetAbstraction
+        NUM_KEYPOINTS: 2048
+        NUM_OUTPUT_FEATURES: 128
+        POINT_SOURCE: raw_points
+        SAMPLE_METHOD: FPS
+        SA_LAYER:
+            raw_points:
+                MLPS:
+                -   [16, 16]
+                -   [16, 16]
+                NSAMPLE: [16, 16]
+                POOL_RADIUS: [0.4, 0.8]
+            x_conv1:
+                DOWNSAMPLE_FACTOR: 1
+                MLPS:
+                -   [16, 16]
+                -   [16, 16]
+                NSAMPLE: [16, 16]
+                POOL_RADIUS: [0.4, 0.8]
+            x_conv2:
+                DOWNSAMPLE_FACTOR: 2
+                MLPS:
+                -   [32, 32]
+                -   [32, 32]
+                NSAMPLE: [16, 32]
+                POOL_RADIUS: [0.8, 1.2]
+            x_conv3:
+                DOWNSAMPLE_FACTOR: 4
+                MLPS:
+                -   [64, 64]
+                -   [64, 64]
+                NSAMPLE: [16, 32]
+                POOL_RADIUS: [1.2, 2.4]
+            x_conv4:
+                DOWNSAMPLE_FACTOR: 8
+                MLPS:
+                -   [64, 64]
+                -   [64, 64]
+                NSAMPLE: [16, 32]
+                POOL_RADIUS: [2.4, 4.8]
+    POINT_HEAD:
+        CLASS_AGNOSTIC: true
+        CLS_FC: [256, 256]
+        LOSS_CONFIG:
+            LOSS_REG: smooth-l1
+            LOSS_WEIGHTS: {point_cls_weight: 1.0}
+        NAME: PointHeadSimple
+        TARGET_CONFIG:
+            GT_EXTRA_WIDTH: [0.2, 0.2, 0.2]
+        USE_POINT_FEATURES_BEFORE_FUSION: true
+    POST_PROCESSING:
+        EVAL_METRIC: kitti
+        NMS_CONFIG: {MULTI_CLASSES_NMS: false, NMS_POST_MAXSIZE: 500, NMS_PRE_MAXSIZE: 4096,
+            NMS_THRESH: 0.1, NMS_TYPE: nms_gpu}
+        OUTPUT_RAW_SCORE: false
+        RECALL_THRESH_LIST: [0.3, 0.5, 0.7]
+        SCORE_THRESH: 0.1
+    ROI_HEAD:
+        CLASS_AGNOSTIC: true
+        CLS_FC: [256, 256]
+        DP_RATIO: 0.3
+        LOSS_CONFIG:
+            CLS_LOSS: BinaryCrossEntropy
+            CORNER_LOSS_REGULARIZATION: true
+            LOSS_WEIGHTS:
+                code_weights: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+                rcnn_cls_weight: 1.0
+                rcnn_corner_weight: 1.0
+                rcnn_reg_weight: 1.0
+            REG_LOSS: smooth-l1
+        NAME: PVRCNNHead
+        NMS_CONFIG:
+            TEST: {MULTI_CLASSES_NMS: false, NMS_POST_MAXSIZE: 100, NMS_PRE_MAXSIZE: 1024,
+                NMS_THRESH: 0.7, NMS_TYPE: nms_gpu}
+            TRAIN: {MULTI_CLASSES_NMS: false, NMS_POST_MAXSIZE: 512, NMS_PRE_MAXSIZE: 9000,
+                NMS_THRESH: 0.8, NMS_TYPE: nms_gpu}
+        REG_FC: [256, 256]
+        ROI_GRID_POOL:
+            GRID_SIZE: 6
+            MLPS:
+            -   [64, 64]
+            -   [64, 64]
+            NSAMPLE: [16, 16]
+            POOL_METHOD: max_pool
+            POOL_RADIUS: [0.8, 1.6]
+        SHARED_FC: [256, 256]
+        TARGET_CONFIG: {BOX_CODER: ResidualCoder, CLS_BG_THRESH: 0.25, CLS_BG_THRESH_LO: 0.1,
+            CLS_FG_THRESH: 0.75, CLS_SCORE_TYPE: roi_iou, FG_RATIO: 0.5, HARD_BG_RATIO: 0.8,
+            REG_FG_THRESH: 0.55, ROI_PER_IMAGE: 128, SAMPLE_ROI_BY_EACH_CLASS: true}
+    VFE: {NAME: MeanVFE}
+OPTIMIZATION:
+    BATCH_SIZE_PER_GPU: 2
+    DECAY_STEP_LIST: [35, 45]
+    DIV_FACTOR: 10
+    GRAD_NORM_CLIP: 10
+    LR: 0.01
+    LR_CLIP: 1e-07
+    LR_DECAY: 0.1
+    LR_WARMUP: false
+    MOMENTUM: 0.9
+    MOMS: [0.95, 0.85]
+    NUM_EPOCHS: 80
+    OPTIMIZER: adam_onecycle
+    PCT_START: 0.4
+    WARMUP_EPOCH: 1
+    WEIGHT_DECAY: 0.01
