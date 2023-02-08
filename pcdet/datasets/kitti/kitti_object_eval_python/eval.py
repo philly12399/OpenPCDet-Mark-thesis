@@ -659,11 +659,24 @@ def filter_det_range(dets, close, far):
     return dets
 
 
+def change_class_name(annos, class_change_map):
+    for i in range(len(annos)):
+        for j in range(len(annos[i]['name'])):
+            orig_class = annos[i]['name'][j]
+            if orig_class in class_change_map:
+                new_class = class_change_map[orig_class]
+                annos[i]['name'][j] = new_class
+
+
 def get_range_eval_result(gt_annos,
                           dt_annos,
                           current_classes,
                           PR_detail_dict=None,
                           ranges=(0, 30, 50, 80)):
+    class_change_map = {'Truck': 'Car'}
+    change_class_name(gt_annos, class_change_map)
+    change_class_name(dt_annos, class_change_map)
+
     overlap_0_7 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7,],
                             [0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.5,],
                             [0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.5,]])
@@ -734,13 +747,13 @@ def get_range_eval_result(gt_annos,
                  for range_s, range_e in range_pairs]
         threeD05 = [ret_dict[f'{curcls_name}_3d_iou0.5/{range_s:02d}-{range_e:02d}_R40']
                     for range_s, range_e in range_pairs]
-        result += f"{curcls_name} IoU 0.5:\n"
+        result += f"{curcls_name} IoU 0.7:\n"
         result += "RANGE " + \
             "  ".join(
                 [f"{range_s:02d}-{range_e:02d} " for range_s, range_e in range_pairs]) + "\n"
         result += "BEV:  " + ", ".join([f"{x:6.3f}" for x in bev07]) + "\n"
         result += "3D :  " + ", ".join([f"{x:6.3f}" for x in threeD07]) + "\n"
-        result += f"{curcls_name} IoU 0.25:\n"
+        result += f"{curcls_name} IoU 0.5:\n"
         result += "RANGE " + \
             "  ".join(
                 [f"{range_s:02d}-{range_e:02d} " for range_s, range_e in range_pairs]) + "\n"

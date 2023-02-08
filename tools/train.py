@@ -48,7 +48,7 @@ def parse_config():
     parser.add_argument('--local_rank', type=int, default=0,
                         help='local rank for distributed training')
     parser.add_argument('--max_ckpt_save_num', type=int,
-                        default=80, help='max number of saved checkpoint')
+                        default=3, help='max number of saved checkpoint')
     parser.add_argument('--merge_all_iters_to_one_epoch',
                         action='store_true', default=False, help='')
     parser.add_argument('--set', dest='set_cfgs', default=None, nargs=argparse.REMAINDER,

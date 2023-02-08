@@ -9,6 +9,7 @@ from . import kitti_utils
 from ...ops.roiaware_pool3d import roiaware_pool3d_utils
 from ...utils import box_utils, calibration_kitti, common_utils, object3d_kitti
 from ..dataset import DatasetTemplate
+from ...config import cfg, cfg_from_yaml_file
 
 
 class KittiDataset(DatasetTemplate):
@@ -170,7 +171,7 @@ class KittiDataset(DatasetTemplate):
             info['point_cloud'] = pc_info
 
             # Overwrite image_shape to not use image data
-            #image_info = {'image_idx': sample_idx,
+            # image_info = {'image_idx': sample_idx,
             #              'image_shape': self.get_image_shape(sample_idx)}
             image_info = {'image_idx': sample_idx,
                           'image_shape': np.array((720, 1280), dtype=np.int32)}
@@ -397,7 +398,6 @@ class KittiDataset(DatasetTemplate):
         eval_det_annos = copy.deepcopy(det_annos)
         eval_gt_annos = [copy.deepcopy(info['annos'])
                          for info in self.kitti_infos]
-
         ranges = (0, 30, 50, 80)
 
         if range_eval:
@@ -528,11 +528,19 @@ if __name__ == '__main__':
         import yaml
         from pathlib import Path
         from easydict import EasyDict
+
+        # cfg_from_yaml_file(sys.argv[2], cfg)
+        # dataset_cfg = cfg.DATA_CONFIG
+        data_path = Path(sys.argv[3]).resolve()
+        # dataset_cfg.DATA_PATH = data_path
         dataset_cfg = EasyDict(yaml.safe_load(open(sys.argv[2])))
         ROOT_DIR = (Path(__file__).resolve().parent / '../../../').resolve()
         create_kitti_infos(
             dataset_cfg=dataset_cfg,
+            # class_names=cfg.CLASS_NAMES,
             class_names=['Car', 'Pedestrian', 'Cyclist', 'Dynamic'],
-            data_path=ROOT_DIR / 'data' / 'kitti',
-            save_path=ROOT_DIR / 'data' / 'kitti'
+            data_path=data_path,
+            save_path=data_path
+            # data_path=ROOT_DIR / 'data' / 'kitti',
+            # save_path=ROOT_DIR / 'data' / 'kitti'
         )

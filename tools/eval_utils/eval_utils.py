@@ -4,6 +4,7 @@ import time
 import numpy as np
 import torch
 import tqdm
+import random
 
 from pcdet.models import load_data_to_gpu
 from pcdet.utils import common_utils
@@ -20,6 +21,114 @@ def statistics_info(cfg, ret_dict, metric, disp_dict):
     disp_dict['recall_%s' % str(min_thresh)] = \
         '(%d, %d) / %d' % (metric['recall_roi_%s' % str(min_thresh)],
                            metric['recall_rcnn_%s' % str(min_thresh)], metric['gt_num'])
+
+
+def eval_from_dataset(cfg, test_dataloader, gt_dataloader, epoch_id, logger, save_to_file=False, result_dir=None, eval_range=False):
+    result_dir.mkdir(parents=True, exist_ok=True)
+
+    final_output_dir = result_dir / 'final_result' / 'data'
+    if save_to_file:
+        final_output_dir.mkdir(parents=True, exist_ok=True)
+
+    metric = {
+        'gt_num': 0,
+    }
+    for cur_thresh in cfg.MODEL.POST_PROCESSING.RECALL_THRESH_LIST:
+        metric['recall_roi_%s' % str(cur_thresh)] = 0
+        metric['recall_rcnn_%s' % str(cur_thresh)] = 0
+
+    gt_dataset = gt_dataloader.dataset
+    class_names = gt_dataset.class_names
+    det_annos = []
+
+    logger.info(
+        '*************** EPOCH %s EVALUATION *****************' % epoch_id)
+    if cfg.LOCAL_RANK == 0:
+        progress_bar = tqdm.tqdm(
+            total=len(gt_dataset), leave=True, desc='eval', dynamic_ncols=True)
+    start_time = time.time()
+    # for i, batch_dict in enumerate(gt_dataloader):
+    test_idx = 0
+    for i, gt_data in enumerate(gt_dataset):
+        test_frame_id = test_dataloader.dataset[test_idx]['frame_id']
+        gt_frame_id = gt_data['frame_id']
+        while test_frame_id != gt_frame_id:
+            # print(f"(frame_id) gt: {gt_frame_id}, test: {test_frame_id}")
+            test_idx += 1
+            try:
+                test_frame_id = test_dataloader.dataset[test_idx]['frame_id']
+            except:
+                print(
+                    f'The indices of test dataset and groundtruth dataset are not match !!')
+                return
+        annos = test_dataloader.dataset.kitti_infos[test_idx]['annos']
+        # Set score to random
+        # for i in range(len(annos['score'])):
+        #     annos['score'][i] = random.random()
+        # Transform the annos a little bit
+        # for i in range(len(annos['location'])):
+        #     offset = 0.01
+        #     annos['location'][i][0] += random.uniform(-offset, offset)
+        #     annos['location'][i][2] += random.uniform(-offset, offset)
+        # for i in range(len())
+        det_annos += [annos]
+        progress_bar.update()
+
+    if cfg.LOCAL_RANK == 0:
+        progress_bar.close()
+
+    logger.info(
+        '*************** Performance of EPOCH %s *****************' % epoch_id)
+    sec_per_example = (time.time() - start_time) / len(gt_dataset)
+    logger.info(
+        'Generate label finished(sec_per_example: %.4f second).' % sec_per_example)
+
+    if cfg.LOCAL_RANK != 0:
+        return {}
+
+    ret_dict = {}
+
+    gt_num_cnt = metric['gt_num']
+    for cur_thresh in cfg.MODEL.POST_PROCESSING.RECALL_THRESH_LIST:
+        cur_roi_recall = metric['recall_roi_%s' %
+                                str(cur_thresh)] / max(gt_num_cnt, 1)
+        cur_rcnn_recall = metric['recall_rcnn_%s' %
+                                 str(cur_thresh)] / max(gt_num_cnt, 1)
+        logger.info('recall_roi_%s: %f' % (cur_thresh, cur_roi_recall))
+        logger.info('recall_rcnn_%s: %f' % (cur_thresh, cur_rcnn_recall))
+        ret_dict['recall/roi_%s' % str(cur_thresh)] = cur_roi_recall
+        ret_dict['recall/rcnn_%s' % str(cur_thresh)] = cur_rcnn_recall
+
+    total_pred_objects = 0
+    for anno in det_annos:
+        total_pred_objects += anno['name'].__len__()
+    logger.info('Average predicted number of objects(%d samples): %.3f'
+                % (len(det_annos), total_pred_objects / max(1, len(det_annos))))
+
+    with open(result_dir / 'result.pkl', 'wb') as f:
+        pickle.dump(det_annos, f)
+
+    if eval_range:
+        result_str, result_dict = gt_dataset.evaluation(
+            det_annos, class_names,
+            eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
+            output_path=final_output_dir,
+            range_eval=True,
+        )
+        logger.info(result_str)
+        ret_dict.update(result_dict)
+    else:
+        result_str, result_dict = gt_dataset.evaluation(
+            det_annos, class_names,
+            eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
+            output_path=final_output_dir
+        )
+        logger.info(result_str)
+        ret_dict.update(result_dict)
+
+    logger.info('Result is save to %s' % result_dir)
+    logger.info('****************Evaluation done.*****************')
+    return ret_dict
 
 
 def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, save_to_file=False, result_dir=None, eval_range=False):
