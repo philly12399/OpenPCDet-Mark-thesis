@@ -747,22 +747,22 @@ def get_range_eval_result(gt_annos,
                  for range_s, range_e in range_pairs]
         threeD05 = [ret_dict[f'{curcls_name}_3d_iou0.5/{range_s:02d}-{range_e:02d}_R40']
                     for range_s, range_e in range_pairs]
-        result += f"{curcls_name} IoU 0.7:\n"
+        result += f"{curcls_name} IoU {min_overlaps[0, 1, j]}:\n"
         result += "RANGE " + \
             "  ".join(
                 [f"{range_s:02d}-{range_e:02d} " for range_s, range_e in range_pairs]) + "\n"
         result += "BEV:  " + ", ".join([f"{x:6.3f}" for x in bev07]) + "\n"
         result += "3D :  " + ", ".join([f"{x:6.3f}" for x in threeD07]) + "\n"
-        result += f"{curcls_name} IoU 0.5:\n"
+        result += f"{curcls_name} IoU {min_overlaps[1, 1, j]}:\n"
         result += "RANGE " + \
             "  ".join(
                 [f"{range_s:02d}-{range_e:02d} " for range_s, range_e in range_pairs]) + "\n"
         result += "BEV:  " + ", ".join([f"{x:6.3f}" for x in bev05]) + "\n"
         result += "3D :  " + ", ".join([f"{x:6.3f}" for x in threeD05]) + "\n"
-        result += f"{curcls_name} IoU 0.7:\n"
+        result += f"{curcls_name} IoU {min_overlaps[0, 1, j]}:\n"
         result += ", ".join([f"{x:3.1f} / {y:3.1f}" for x,
                             y in zip(bev07, threeD07)]) + "\n"
-        result += f"{curcls_name} IoU 0.5:\n"
+        result += f"{curcls_name} IoU {min_overlaps[1, 1, j]}:\n"
         result += ", ".join([f"{x:3.1f} / {y:3.1f}" for x,
                             y in zip(bev05, threeD05)]) + "\n\n"
 

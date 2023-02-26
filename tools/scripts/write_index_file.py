@@ -2,9 +2,10 @@ import os
 import fire
 
 
-def write_index_file(index_dir, label_dir):
+def write_index_file(index_dir, label_dir, subsample_factor):
     train = [int(x.split('.')[0]) for x in os.listdir(label_dir)
              if len(open(os.path.join(label_dir, x), 'r').readlines()) != 0]
+    train = [x for x in train if x % subsample_factor == 0]
     train.sort()
     val = train[:]
     with open(os.path.join(index_dir, 'train.txt'), 'w') as out:
