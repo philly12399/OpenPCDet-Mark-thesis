@@ -1,3 +1,5 @@
+#!/bin/bash -i
+
 starting_round=$1
 processing_frames=$2
 wayside_repo_path="$HOME/wayside-portal"

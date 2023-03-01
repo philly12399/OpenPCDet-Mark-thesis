@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -i
 
 self_training_round=$1
 processing_frames=$2
@@ -20,6 +20,7 @@ set -e
 
 # Run pcd-detect + pcd-tracking + data-writer
 (
+export RUST_LOG=info
 ckpt_path="$openpcdet_repo_path/output/kitti_models/pv_rcnn_ST-$device-r$(($self_training_round - 1))/default/ckpt/checkpoint_epoch_80.pth"
 python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json "$exp_dir/config/modules/pcd-detect-lidar1.json5" ckpt "$ckpt_path"
 cd "$wayside_repo_path/exp/mark-exp"
