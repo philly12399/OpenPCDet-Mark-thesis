@@ -15,6 +15,7 @@ box_colormap = [
     [0, 1, 0],
     [0, 1, 1],
     [1, 1, 0],
+    [0, 0, 0]
 ]
 
 
@@ -54,7 +55,7 @@ def draw_scenes(points, gt_boxes=None, ref_boxes=None, ref_labels=None, ref_scor
 
     # Setting camera
     vis.setup_camera(1000.0, [10., 0., 0.], [10., 0., 30.], [0., 0., 1.])
-    vis.show_skybox(False)
+    # vis.show_skybox(False)
     # vis.set_background([0., 0., 0., 1.], None)
     vis.point_size = 1
 

@@ -31,7 +31,7 @@ def get_thresholds(scores: np.ndarray, num_gt, num_sample_pts=41):
 
 def clean_data(gt_anno, dt_anno, current_class, difficulty):
     CLASS_NAMES = ['car', 'pedestrian', 'cyclist',
-                   'van', 'person_sitting', 'truck', 'dynamic', 'bus']
+                   'van', 'person_sitting', 'truck', 'dynamic', 'bus', 'car/truck']
     MIN_HEIGHT = [40, 25, 25]
     MAX_OCCLUSION = [0, 1, 2]
     MAX_TRUNCATION = [0.15, 0.3, 0.5]
@@ -658,6 +658,19 @@ def filter_det_range(dets, close, far):
         #     raise
     return dets
 
+def append_merged_classes(dets, merge_class_sets):
+    dets = deepcopy(dets)
+    if dets['location'].shape[0] == 0:
+        return dets
+    for class_set in merge_class_sets:
+        new_class = '/'.join(class_set)
+        valid_idx = [s in class_set for s in dets['name']]
+        dets['name'] = np.append(dets['name'], np.array([new_class for n in dets['name'][valid_idx]]), axis=0)
+        for k in dets:
+            if k == 'frame_id' or k == 'gt_boxes_lidar' or k == 'name':
+                continue
+            dets[k] = np.append(dets[k], dets[k][valid_idx], axis=0)
+    return dets
 
 def change_class_name(annos, class_change_map):
     for i in range(len(annos)):
@@ -667,22 +680,45 @@ def change_class_name(annos, class_change_map):
                 new_class = class_change_map[orig_class]
                 annos[i]['name'][j] = new_class
 
+def filter_by_roi(annos, x_min, y_min, x_max, y_max):
+    dets = deepcopy(dets)
+    if dets['boxes_lidar'].shape[0] == 0:
+        return dets
+    valid_idx = (dets['boxes_lidar'][:, 0] > x_min) * \
+        (dets['boxes_lidar'][:, 0] <= x_max) * \
+        (dets['boxes_lidar'][:, 1] > y_min) * \
+        (dets['boxes_lidar'][:, 1] <= y_max) 
+    for k in dets:
+        if k == 'frame_id' or k == 'gt_boxes_lidar':
+            continue
+        dets[k] = dets[k][valid_idx]
+    return dets
 
 def get_range_eval_result(gt_annos,
                           dt_annos,
                           current_classes,
                           PR_detail_dict=None,
-                          ranges=(0, 30, 50, 80)):
-    class_change_map = {'Truck': 'Car'}
-    change_class_name(gt_annos, class_change_map)
-    change_class_name(dt_annos, class_change_map)
+                          ranges=(0, 30, 50, 80),
+                          filter_by_roi=False):
+    # if filter_by_roi:
+    #     gt_annos = [filter_by_roi(anno) for anno in gt_annos]
+    
+    # Overwrites current_classes
+    current_classes = ['Cyclist', 'Car', 'Car/Truck', 'Truck']
 
-    overlap_0_7 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7,],
-                            [0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.5,],
-                            [0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.5,]])
-    overlap_0_5 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5, 0.5, 0.5, 0.7,],
-                            [0.25, 0.25, 0.25, 0.5, 0.25, 0.5, 0.25, 0.25,],
-                            [0.25, 0.25, 0.25, 0.5, 0.25, 0.5, 0.25, 0.25,]])
+    merge_class_sets = [('Car', 'Truck')]
+
+    gt_annos = [append_merged_classes(
+            dets, merge_class_sets) for dets in gt_annos]
+    dt_annos = [append_merged_classes(
+            dets, merge_class_sets) for dets in dt_annos]
+
+    overlap_0_7 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.7],
+                            [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                            [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]])
+    overlap_0_5 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5, 0.5, 0.5, 0.7, 0.5],
+                            [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
+                            [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]])
     min_overlaps = np.stack([overlap_0_7, overlap_0_5], axis=0)  # [2, 3, 5]
     class_to_name = {
         0: 'Car',
@@ -693,6 +729,7 @@ def get_range_eval_result(gt_annos,
         5: 'Truck',
         6: 'Dynamic', 
         7: 'Bus',
+        8: 'Car/Truck',
     }
     name_to_class = {v: n for n, v in class_to_name.items()}
     if not isinstance(current_classes, (list, tuple)):
@@ -719,14 +756,16 @@ def get_range_eval_result(gt_annos,
         range_pairs.append((ranges[i], ranges[i+1]))
     range_pairs.append([ranges[0], ranges[-1]])
     for range_s, range_e in range_pairs:
+        
         dt_annos_range = [filter_det_range(
             dets, range_s, range_e) for dets in dt_annos]
         gt_annos_range = [filter_det_range(
             dets, range_s, range_e) for dets in gt_annos]
-
+        test = {}
         _, _, _, _, _, mAPbev_R40, mAP3d_R40, _ = do_eval(
             gt_annos_range, dt_annos_range, current_classes, min_overlaps, compute_aos,
-            PR_detail_dict=PR_detail_dict, difficultys=[3])
+            PR_detail_dict=test, difficultys=[3])
+        
         for j, curcls in enumerate(current_classes):
             # mAP threshold array: [num_minoverlap, metric, class]
             # mAP result: [num_class, num_diff, num_minoverlap]

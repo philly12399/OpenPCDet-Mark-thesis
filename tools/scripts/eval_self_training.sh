@@ -11,10 +11,10 @@ set -e
 (
 source "$openpcdet_repo_path/pcdet-env/bin/activate"
 cd $openpcdet_repo_path/tools
-cfg_file=$openpcdet_repo_path/tools/cfgs/kitti_models/pv_rcnn_wayside-gt-dataset-lidar1.yaml
+cfg_file=./cfgs/kitti_models/pv_rcnn_wayside-gt-dataset-lidar1.yaml
 for ((i=starting_round; i<=ending_round; i++)); do
 ckpt_path="$ckpt_dir/pv_rcnn_ST-$device-r$i/default/ckpt/checkpoint_epoch_80.pth"
-python test.py --cfg_file $cfg_file --ckpt $ckpt_path --extra_tag ST-$device-r$i --eval_range
+python test.py --cfg_file $cfg_file --ckpt $ckpt_path --extra_tag ST-$device-r$i --eval_range --save_to_file --batch_size 1
 done
 deactivate
 )

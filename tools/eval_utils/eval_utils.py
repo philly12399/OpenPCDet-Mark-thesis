@@ -227,23 +227,23 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, sa
     with open(result_dir / 'result.pkl', 'wb') as f:
         pickle.dump(det_annos, f)
 
-    if not eval_range:
-        result_str, result_dict = dataset.evaluation(
-            det_annos, class_names,
-            eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
-            output_path=final_output_dir
-        )
+    # if not eval_range:
+    #     result_str, result_dict = dataset.evaluation(
+    #         det_annos, class_names,
+    #         eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
+    #         output_path=final_output_dir
+    #     )
 
-        logger.info(result_str)
-    else:
-        result_str, result_dict = dataset.evaluation(
-            det_annos, class_names,
-            eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
-            output_path=final_output_dir,
-            range_eval=True,
-        )
+    #     logger.info(result_str)
+    # else:
+    result_str, result_dict = dataset.evaluation(
+        det_annos, class_names,
+        eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
+        output_path=final_output_dir,
+        range_eval=eval_range,
+    )
 
-        logger.info(result_str)
+    logger.info(result_str)
 
     ret_dict.update(result_dict)
     logger.info('Result is save to %s' % result_dir)
