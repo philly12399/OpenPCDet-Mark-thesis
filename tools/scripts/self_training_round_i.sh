@@ -4,7 +4,7 @@ self_training_round=$1
 processing_frames=$2
 wayside_repo_path=$3
 openpcdet_repo_path=$4
-datawriter_output_path=$5
+tracking_data_dir=$5
 device=$6
 exp_dir=$7
 pcd_detect_script=$8
@@ -18,28 +18,37 @@ echo "processing frames: $processing_frames"
 
 set -e
 
-# Run pcd-detect + pcd-tracking + data-writer
+# Run pcd-detect + pcd-tracking
 (
-export RUST_LOG=info
 ckpt_path="$openpcdet_repo_path/output/kitti_models/pv_rcnn_ST-$device-r$(($self_training_round - 1))/default/ckpt/checkpoint_epoch_80.pth"
 python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json "$exp_dir/config/modules/pcd-detect-lidar1.json5" ckpt "$ckpt_path"
 cd "$wayside_repo_path/exp/mark-exp"
-$pcd_detect_script $processing_frames
+$pcd_detect_script $(($processing_frames + 2500))
 )
 
 
 # Get latest directory name
-supervisely_ann_path="$datawriter_output_path/$(ls -t $datawriter_output_path| head -n1)/0/pcd/dataset/ann"
+tracking_data_path="$tracking_data_dir/$(ls -t $tracking_data_dir| head -n1)"
 
-# Pipeline: save-kitti-format -> kitti-format-data
-# Get latest directory name
+
+# Run module refine-by-track to filter BBoxes by tracking data
+(
+cd "$wayside_repo_path/rust-bin/refine-by-track"
+python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json ./refine-by-track.json5 input_dir "$tracking_data_path"
+python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json ./refine-by-track.json5 num_output_frames "$processing_frames"
+cargo run --release -- -c ./refine-by-track.json5
+)
+
+refined_data_path="$tracking_data_path/refined-output/supervisely"
+
+# Run module save-kitti-format to get kitti-format data
 (cd "$wayside_repo_path/rust-bin/save-kitti-format" && \
-cargo run --release -- -c "$wayside_repo_path/rust-bin/save-kitti-format/config-$device.json5" -a "$supervisely_ann_path" -s 1)
+cargo run --release -- -c "$wayside_repo_path/rust-bin/save-kitti-format/config-$device.json5" -a "$refined_data_path" -s 1)
 
 # Prepare KITTI training data
 (
 source "$openpcdet_repo_path/pcdet-env/bin/activate"
-kitti_format_dir="$(dirname "$supervisely_ann_path")/kitti-format"
+kitti_format_dir="$(dirname "$refined_data_path")/kitti-format"
 mkdir -p "$openpcdet_repo_path/data/ST-$device-r$self_training_round"
 cd "$openpcdet_repo_path/data/ST-$device-r$self_training_round" 
 ln -Ts "$kitti_format_dir" training 
