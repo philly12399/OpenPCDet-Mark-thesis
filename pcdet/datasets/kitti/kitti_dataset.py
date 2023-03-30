@@ -94,8 +94,10 @@ class KittiDataset(DatasetTemplate):
 
     def get_image_shape(self, idx):
         img_file = self.root_split_path / 'image_2' / ('%s.png' % idx)
-        assert img_file.exists()
-        return np.array(io.imread(img_file).shape[:2], dtype=np.int32)
+        if img_file.exists():
+            return np.array(io.imread(img_file).shape[:2], dtype=np.int32)
+        else:
+            return np.array((720, 1280), dtype=np.int32)
 
     def get_label(self, idx):
         label_file = self.root_split_path / 'label_2' / ('%s.txt' % idx)
@@ -171,10 +173,10 @@ class KittiDataset(DatasetTemplate):
             info['point_cloud'] = pc_info
 
             # Overwrite image_shape to not use image data
-            # image_info = {'image_idx': sample_idx,
-            #              'image_shape': self.get_image_shape(sample_idx)}
             image_info = {'image_idx': sample_idx,
-                          'image_shape': np.array((720, 1280), dtype=np.int32)}
+                          'image_shape': self.get_image_shape(sample_idx)}
+            # image_info = {'image_idx': sample_idx,
+            #               'image_shape': np.array((720, 1280), dtype=np.int32)}
             info['image'] = image_info
             calib = self.get_calib(sample_idx)
 
