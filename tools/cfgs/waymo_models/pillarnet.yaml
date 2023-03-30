@@ -1,34 +1,30 @@
 CLASS_NAMES: ['Vehicle', 'Pedestrian', 'Cyclist']
 
 DATA_CONFIG:
-    _BASE_CONFIG_: cfgs/dataset_configs/waymo_dataset_multiframe.yaml
-
-    SAMPLED_INTERVAL: {
-        'train': 1,
-        'test': 1
-    }
+    _BASE_CONFIG_: cfgs/dataset_configs/waymo_dataset.yaml
 
 MODEL:
-    NAME: CenterPoint
+    NAME: PillarNet
 
     VFE:
-        NAME: MeanVFE
+        NAME: DynamicPillarVFESimple2D
+        WITH_DISTANCE: False
+        USE_ABSLOTE_XYZ: True
+        USE_CLUSTER_XYZ: False
+        USE_NORM: True
+        NUM_FILTERS: [32]
 
     BACKBONE_3D:
-        NAME: VoxelResBackBone8x
-
-    MAP_TO_BEV:
-        NAME: HeightCompression
-        NUM_BEV_FEATURES: 256
+        NAME: PillarRes18BackBone8x
 
     BACKBONE_2D:
-        NAME: BaseBEVBackbone
+        NAME: BaseBEVBackboneV1
 
         LAYER_NUMS: [5, 5]
         LAYER_STRIDES: [1, 2]
-        NUM_FILTERS: [128, 256]
+        NUM_FILTERS: [256, 256]
         UPSAMPLE_STRIDES: [1, 2]
-        NUM_UPSAMPLE_FILTERS: [256, 256]
+        NUM_UPSAMPLE_FILTERS: [128, 128]
 
     DENSE_HEAD:
         NAME: CenterHead
@@ -42,13 +38,12 @@ MODEL:
         USE_BIAS_BEFORE_NORM: True
         NUM_HM_CONV: 2
         SEPARATE_HEAD_CFG:
-            HEAD_ORDER: ['center', 'center_z', 'dim', 'rot', 'vel']
+            HEAD_ORDER: ['center', 'center_z', 'dim', 'rot']
             HEAD_DICT: {
                 'center': {'out_channels': 2, 'num_conv': 2},
                 'center_z': {'out_channels': 1, 'num_conv': 2},
                 'dim': {'out_channels': 3, 'num_conv': 2},
                 'rot': {'out_channels': 2, 'num_conv': 2},
-                'vel': {'out_channels': 2, 'num_conv': 2},
             }
 
         TARGET_ASSIGNER_CONFIG:
@@ -61,7 +56,7 @@ MODEL:
             LOSS_WEIGHTS: {
                 'cls_weight': 1.0,
                 'loc_weight': 2.0,
-                'code_weights': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2]
+                'code_weights': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
             }
 
         POST_PROCESSING:
@@ -82,7 +77,7 @@ MODEL:
 
 OPTIMIZATION:
     BATCH_SIZE_PER_GPU: 4
-    NUM_EPOCHS: 36
+    NUM_EPOCHS: 30
 
     OPTIMIZER: adam_onecycle
     LR: 0.003
