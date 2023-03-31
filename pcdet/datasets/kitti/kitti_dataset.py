@@ -353,7 +353,7 @@ class KittiDataset(DatasetTemplate):
 
         return annos
 
-    def evaluation(self, det_annos, class_names, **kwargs):
+    def evaluation(self, det_annos, class_names, range_eval=False, **kwargs):
         if 'annos' not in self.kitti_infos[0].keys():
             return None, {}
 

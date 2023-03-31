@@ -128,7 +128,7 @@ def eval_from_dataset(cfg, test_dataloader, gt_dataloader, epoch_id, logger, sav
     return ret_dict
 
 
-def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, save_to_file=False, result_dir=None, eval_range=False):
+def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, args, dist_test=False,  result_dir=None, ):
     result_dir.mkdir(parents=True, exist_ok=True)
 
     final_output_dir = result_dir / 'final_result' / 'data'
@@ -244,7 +244,7 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, sa
         det_annos, class_names,
         eval_metric=cfg.MODEL.POST_PROCESSING.EVAL_METRIC,
         output_path=final_output_dir,
-        range_eval=eval_range,
+        range_eval=args.eval_range,
     )
 
     logger.info(result_str)
