@@ -20,8 +20,7 @@ from train_utils.train_utils import train_model
 
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
-    parser.add_argument('--cfg_file', type=str, default=None,
-                        help='specify the config for training')
+    parser.add_argument('--cfg_file', type=str, default=None, help='specify the config for training')
 
     parser.add_argument('--batch_size', type=int, default=None,
                         required=False, help='batch size for training')
@@ -54,8 +53,7 @@ def parse_config():
     parser.add_argument('--set', dest='set_cfgs', default=None, nargs=argparse.REMAINDER,
                         help='set extra config keys if needed')
 
-    parser.add_argument('--max_waiting_mins', type=int,
-                        default=0, help='max waiting minutes')
+    parser.add_argument('--max_waiting_mins', type=int, default=0, help='max waiting minutes')
     parser.add_argument('--start_epoch', type=int, default=0, help='')
     parser.add_argument('--num_epochs_to_eval', type=int,
                         default=0, help='number of checkpoints to be evaluated')
@@ -108,8 +106,7 @@ def main():
     if args.fix_random_seed:
         common_utils.set_random_seed(666 + cfg.LOCAL_RANK)
 
-    output_dir = cfg.ROOT_DIR / 'output' / \
-        cfg.EXP_GROUP_PATH / cfg.TAG / args.extra_tag
+    output_dir = cfg.ROOT_DIR / 'output' / cfg.EXP_GROUP_PATH / cfg.TAG / args.extra_tag
     ckpt_dir = output_dir / 'ckpt'
     output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -119,8 +116,7 @@ def main():
 
     # log to file
     logger.info('**********************Start logging**********************')
-    gpu_list = os.environ['CUDA_VISIBLE_DEVICES'] if 'CUDA_VISIBLE_DEVICES' in os.environ.keys(
-    ) else 'ALL'
+    gpu_list = os.environ['CUDA_VISIBLE_DEVICES'] if 'CUDA_VISIBLE_DEVICES' in os.environ.keys() else 'ALL'
     logger.info('CUDA_VISIBLE_DEVICES=%s' % gpu_list)
 
     if dist_train:
@@ -134,8 +130,7 @@ def main():
     if cfg.LOCAL_RANK == 0:
         os.system('cp %s %s' % (args.cfg_file, output_dir))
 
-    tb_log = SummaryWriter(log_dir=str(
-        output_dir / 'tensorboard')) if cfg.LOCAL_RANK == 0 else None
+    tb_log = SummaryWriter(log_dir=str(output_dir / 'tensorboard')) if cfg.LOCAL_RANK == 0 else None
 
     logger.info("----------- Create dataloader & network & optimizer -----------")
     train_set, train_loader, train_sampler = build_dataloader(
@@ -150,8 +145,7 @@ def main():
         seed=666 if args.fix_random_seed else None
     )
 
-    model = build_network(model_cfg=cfg.MODEL, num_class=len(
-        cfg.CLASS_NAMES), dataset=train_set)
+    model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=train_set)
     if args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model.cuda()
@@ -162,21 +156,25 @@ def main():
     start_epoch = it = 0
     last_epoch = -1
     if args.pretrained_model is not None:
-        model.load_params_from_file(
-            filename=args.pretrained_model, to_cpu=dist_train, logger=logger)
+        model.load_params_from_file(filename=args.pretrained_model, to_cpu=dist_train, logger=logger)
 
     if args.ckpt is not None:
-        it, start_epoch = model.load_params_with_optimizer(
-            args.ckpt, to_cpu=dist_train, optimizer=optimizer, logger=logger)
+        it, start_epoch = model.load_params_with_optimizer(args.ckpt, to_cpu=dist_train, optimizer=optimizer, logger=logger)
         last_epoch = start_epoch + 1
     else:
-        ckpt_list = glob.glob(str(ckpt_dir / '*checkpoint_epoch_*.pth'))
+        ckpt_list = glob.glob(str(ckpt_dir / '*.pth'))
+              
         if len(ckpt_list) > 0:
             ckpt_list.sort(key=os.path.getmtime)
-            it, start_epoch = model.load_params_with_optimizer(
-                ckpt_list[-1], to_cpu=dist_train, optimizer=optimizer, logger=logger
-            )
-            last_epoch = start_epoch + 1
+            while len(ckpt_list) > 0:
+                try:
+                    it, start_epoch = model.load_params_with_optimizer(
+                        ckpt_list[-1], to_cpu=dist_train, optimizer=optimizer, logger=logger
+                    )
+                    last_epoch = start_epoch + 1
+                    break
+                except:
+                    ckpt_list = ckpt_list[:-1]
 
     model.train()  # before wrap to DistributedDataParallel to support fixed some parameters
     if dist_train:
@@ -192,6 +190,7 @@ def main():
     # -----------------------start training---------------------------
     logger.info('**********************Start training %s/%s(%s)**********************'
                 % (cfg.EXP_GROUP_PATH, cfg.TAG, args.extra_tag))
+
     train_model(
         model,
         optimizer,
@@ -234,8 +233,7 @@ def main():
     )
     eval_output_dir = output_dir / 'eval' / 'eval_with_train'
     eval_output_dir.mkdir(parents=True, exist_ok=True)
-    # Only evaluate the last args.num_epochs_to_eval epochs
-    args.start_epoch = max(args.epochs - args.num_epochs_to_eval, 0)
+    args.start_epoch = max(args.epochs - args.num_epochs_to_eval, 0)  # Only evaluate the last args.num_epochs_to_eval epochs
 
     repeat_eval_ckpt(
         model.module if dist_train else model,

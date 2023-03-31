@@ -2,7 +2,7 @@ import os
 
 import torch
 import torch.nn as nn
-
+import numpy as np
 from ...ops.iou3d_nms import iou3d_nms_utils
 from ...utils.spconv_utils import find_all_spconv_keys
 from .. import backbones_2d, backbones_3d, dense_heads, roi_heads
@@ -163,7 +163,7 @@ class Detector3DTemplate(nn.Module):
         point_head_module = roi_heads.__all__[self.model_cfg.ROI_HEAD.NAME](
             model_cfg=self.model_cfg.ROI_HEAD,
             input_channels=model_info_dict['num_point_features'],
-            backbone_channels=model_info_dict['backbone_channels'],
+            backbone_channels= model_info_dict.get('backbone_channels', None),
             point_cloud_range=model_info_dict['point_cloud_range'],
             voxel_size=model_info_dict['voxel_size'],
             num_class=self.num_class if not self.model_cfg.ROI_HEAD.CLASS_AGNOSTIC else 1,
@@ -206,7 +206,7 @@ class Detector3DTemplate(nn.Module):
 
             box_preds = batch_dict['batch_box_preds'][batch_mask]
             src_box_preds = box_preds
-
+            
             if not isinstance(batch_dict['batch_cls_preds'], list):
                 cls_preds = batch_dict['batch_cls_preds'][batch_mask]
 
@@ -216,8 +216,7 @@ class Detector3DTemplate(nn.Module):
                 if not batch_dict['cls_preds_normalized']:
                     cls_preds = torch.sigmoid(cls_preds)
             else:
-                cls_preds = [x[batch_mask]
-                             for x in batch_dict['batch_cls_preds']]
+                cls_preds = [x[batch_mask] for x in batch_dict['batch_cls_preds']]
                 src_cls_preds = cls_preds
                 if not batch_dict['cls_preds_normalized']:
                     cls_preds = [torch.sigmoid(x) for x in cls_preds]
@@ -225,8 +224,7 @@ class Detector3DTemplate(nn.Module):
             if post_process_cfg.NMS_CONFIG.MULTI_CLASSES_NMS:
                 if not isinstance(cls_preds, list):
                     cls_preds = [cls_preds]
-                    multihead_label_mapping = [torch.arange(
-                        1, self.num_class, device=cls_preds[0].device)]
+                    multihead_label_mapping = [torch.arange(1, self.num_class, device=cls_preds[0].device)]
                 else:
                     multihead_label_mapping = batch_dict['multihead_label_mapping']
 
@@ -234,8 +232,7 @@ class Detector3DTemplate(nn.Module):
                 pred_scores, pred_labels, pred_boxes = [], [], []
                 for cur_cls_preds, cur_label_mapping in zip(cls_preds, multihead_label_mapping):
                     assert cur_cls_preds.shape[1] == len(cur_label_mapping)
-                    cur_box_preds = box_preds[cur_start_idx:
-                                              cur_start_idx + cur_cls_preds.shape[0]]
+                    cur_box_preds = box_preds[cur_start_idx: cur_start_idx + cur_cls_preds.shape[0]]
                     cur_pred_scores, cur_pred_labels, cur_pred_boxes = model_nms_utils.multi_classes_nms(
                         cls_scores=cur_cls_preds, box_preds=cur_box_preds,
                         nms_config=post_process_cfg.NMS_CONFIG,
@@ -256,7 +253,7 @@ class Detector3DTemplate(nn.Module):
                     label_key = 'roi_labels' if 'roi_labels' in batch_dict else 'batch_pred_labels'
                     label_preds = batch_dict[label_key][index]
                 else:
-                    label_preds = label_preds + 1
+                    label_preds = label_preds + 1 
                 selected, selected_scores = model_nms_utils.class_agnostic_nms(
                     box_scores=cls_preds, box_preds=box_preds,
                     nms_config=post_process_cfg.NMS_CONFIG,
@@ -270,12 +267,12 @@ class Detector3DTemplate(nn.Module):
                 final_scores = selected_scores
                 final_labels = label_preds[selected]
                 final_boxes = box_preds[selected]
-
+                    
             recall_dict = self.generate_recall_record(
                 box_preds=final_boxes if 'rois' not in batch_dict else src_box_preds,
                 recall_dict=recall_dict, batch_index=index, data_dict=batch_dict,
                 thresh_list=post_process_cfg.RECALL_THRESH_LIST
-            )
+            )        
 
             record_dict = {
                 'pred_boxes': final_boxes,
@@ -308,25 +305,21 @@ class Detector3DTemplate(nn.Module):
 
         if cur_gt.shape[0] > 0:
             if box_preds.shape[0] > 0:
-                iou3d_rcnn = iou3d_nms_utils.boxes_iou3d_gpu(
-                    box_preds[:, 0:7], cur_gt[:, 0:7])
+                iou3d_rcnn = iou3d_nms_utils.boxes_iou3d_gpu(box_preds[:, 0:7], cur_gt[:, 0:7])
             else:
                 iou3d_rcnn = torch.zeros((0, cur_gt.shape[0]))
 
             if rois is not None:
-                iou3d_roi = iou3d_nms_utils.boxes_iou3d_gpu(
-                    rois[:, 0:7], cur_gt[:, 0:7])
+                iou3d_roi = iou3d_nms_utils.boxes_iou3d_gpu(rois[:, 0:7], cur_gt[:, 0:7])
 
             for cur_thresh in thresh_list:
                 if iou3d_rcnn.shape[0] == 0:
                     recall_dict['rcnn_%s' % str(cur_thresh)] += 0
                 else:
-                    rcnn_recalled = (iou3d_rcnn.max(dim=0)[
-                                     0] > cur_thresh).sum().item()
+                    rcnn_recalled = (iou3d_rcnn.max(dim=0)[0] > cur_thresh).sum().item()
                     recall_dict['rcnn_%s' % str(cur_thresh)] += rcnn_recalled
                 if rois is not None:
-                    roi_recalled = (iou3d_roi.max(dim=0)[
-                                    0] > cur_thresh).sum().item()
+                    roi_recalled = (iou3d_roi.max(dim=0)[0] > cur_thresh).sum().item()
                     recall_dict['roi_%s' % str(cur_thresh)] += roi_recalled
 
             recall_dict['gt'] += cur_gt.shape[0]
@@ -345,14 +338,12 @@ class Detector3DTemplate(nn.Module):
                 # with different spconv versions, we need to adapt weight shapes for spconv blocks
                 # adapt spconv weights from version 1.x to version 2.x if you used weights from spconv 1.x
 
-                # (k1, k2, k3, c_in, c_out) to (k1, k2, k3, c_out, c_in)
-                val_native = val.transpose(-1, -2)
+                val_native = val.transpose(-1, -2)  # (k1, k2, k3, c_in, c_out) to (k1, k2, k3, c_out, c_in)
                 if val_native.shape == state_dict[key].shape:
                     val = val_native.contiguous()
                 else:
                     assert val.shape.__len__() == 5, 'currently only spconv 3D is supported'
-                    # (k1, k2, k3, c_in, c_out) to (c_out, k1, k2, k3, c_in)
-                    val_implicit = val.permute(4, 0, 1, 2, 3)
+                    val_implicit = val.permute(4, 0, 1, 2, 3)  # (k1, k2, k3, c_in, c_out) to (c_out, k1, k2, k3, c_in)
                     if val_implicit.shape == state_dict[key].shape:
                         val = val_implicit.contiguous()
 
@@ -367,37 +358,36 @@ class Detector3DTemplate(nn.Module):
             self.load_state_dict(state_dict)
         return state_dict, update_model_state
 
-    def load_params_from_file(self, filename, logger, to_cpu=False):
+    def load_params_from_file(self, filename, logger, to_cpu=False, pre_trained_path=None):
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
-        logger.info('==> Loading parameters from checkpoint %s to %s' %
-                    (filename, 'CPU' if to_cpu else 'GPU'))
+        logger.info('==> Loading parameters from checkpoint %s to %s' % (filename, 'CPU' if to_cpu else 'GPU'))
         loc_type = torch.device('cpu') if to_cpu else None
         checkpoint = torch.load(filename, map_location=loc_type)
         model_state_disk = checkpoint['model_state']
-
+        if not pre_trained_path is None:
+            pretrain_checkpoint = torch.load(pre_trained_path, map_location=loc_type)
+            pretrain_model_state_disk = pretrain_checkpoint['model_state']
+            model_state_disk.update(pretrain_model_state_disk)
+            
         version = checkpoint.get("version", None)
         if version is not None:
             logger.info('==> Checkpoint trained from version: %s' % version)
 
-        state_dict, update_model_state = self._load_state_dict(
-            model_state_disk, strict=False)
+        state_dict, update_model_state = self._load_state_dict(model_state_disk, strict=False)
 
         for key in state_dict:
             if key not in update_model_state:
-                logger.info('Not updated weight %s: %s' %
-                            (key, str(state_dict[key].shape)))
+                logger.info('Not updated weight %s: %s' % (key, str(state_dict[key].shape)))
 
-        logger.info('==> Done (loaded %d/%d)' %
-                    (len(update_model_state), len(state_dict)))
+        logger.info('==> Done (loaded %d/%d)' % (len(update_model_state), len(state_dict)))
 
     def load_params_with_optimizer(self, filename, to_cpu=False, optimizer=None, logger=None):
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
-        logger.info('==> Loading parameters from checkpoint %s to %s' %
-                    (filename, 'CPU' if to_cpu else 'GPU'))
+        logger.info('==> Loading parameters from checkpoint %s to %s' % (filename, 'CPU' if to_cpu else 'GPU'))
         loc_type = torch.device('cpu') if to_cpu else None
         checkpoint = torch.load(filename, map_location=loc_type)
         epoch = checkpoint.get('epoch', -1)
@@ -415,14 +405,11 @@ class Detector3DTemplate(nn.Module):
                 src_file, ext = filename[:-4], filename[-3:]
                 optimizer_filename = '%s_optim.%s' % (src_file, ext)
                 if os.path.exists(optimizer_filename):
-                    optimizer_ckpt = torch.load(
-                        optimizer_filename, map_location=loc_type)
-                    optimizer.load_state_dict(
-                        optimizer_ckpt['optimizer_state'])
+                    optimizer_ckpt = torch.load(optimizer_filename, map_location=loc_type)
+                    optimizer.load_state_dict(optimizer_ckpt['optimizer_state'])
 
         if 'version' in checkpoint:
-            print('==> Checkpoint trained from version: %s' %
-                  checkpoint['version'])
+            print('==> Checkpoint trained from version: %s' % checkpoint['version'])
         logger.info('==> Done')
 
         return it, epoch

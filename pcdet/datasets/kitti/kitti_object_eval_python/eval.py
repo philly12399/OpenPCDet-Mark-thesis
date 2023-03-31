@@ -1,11 +1,9 @@
 import io as sysio
-from re import I
 
 import numba
 import numpy as np
 
 from .rotate_iou import rotate_iou_gpu_eval
-from copy import deepcopy
 
 
 @numba.jit
@@ -55,9 +53,7 @@ def clean_data(gt_anno, dt_anno, current_class, difficulty):
         else:
             valid_class = -1
         ignore = False
-        if difficulty >= 3:
-            pass
-        elif ((gt_anno["occluded"][i] > MAX_OCCLUSION[difficulty])
+        if ((gt_anno["occluded"][i] > MAX_OCCLUSION[difficulty])
                 or (gt_anno["truncated"][i] > MAX_TRUNCATION[difficulty])
                 or (height <= MIN_HEIGHT[difficulty])):
             # if gt_anno["difficulty"][i] > difficulty or gt_anno["difficulty"][i] == -1:
@@ -78,7 +74,7 @@ def clean_data(gt_anno, dt_anno, current_class, difficulty):
         else:
             valid_class = -1
         height = abs(dt_anno["bbox"][i, 3] - dt_anno["bbox"][i, 1])
-        if difficulty in (0, 1, 2) and height < MIN_HEIGHT[difficulty]:
+        if height < MIN_HEIGHT[difficulty]:
             ignored_dt.append(1)
         elif valid_class == 1:
             ignored_dt.append(0)
@@ -586,9 +582,9 @@ def do_eval(gt_annos,
             current_classes,
             min_overlaps,
             compute_aos=False,
-            PR_detail_dict=None, difficultys=[0, 1, 2]):
+            PR_detail_dict=None):
     # min_overlaps: [num_minoverlap, metric, num_class]
-    # difficultys = [0, 1, 2]
+    difficultys = [0, 1, 2]
     ret = eval_class(gt_annos, dt_annos, current_classes, difficultys, 0,
                      min_overlaps, compute_aos)
     # ret: [num_class, num_diff, num_minoverlap, num_sample_points]
@@ -875,9 +871,9 @@ def get_official_eval_result(gt_annos, dt_annos, current_classes, PR_detail_dict
                                      f"{mAPaos[j, 1, i]:.2f}, "
                                      f"{mAPaos[j, 2, i]:.2f}"))
                 # if i == 0:
-                # ret_dict['%s_aos/easy' % class_to_name[curcls]] = mAPaos[j, 0, 0]
-                # ret_dict['%s_aos/moderate' % class_to_name[curcls]] = mAPaos[j, 1, 0]
-                # ret_dict['%s_aos/hard' % class_to_name[curcls]] = mAPaos[j, 2, 0]
+                   # ret_dict['%s_aos/easy' % class_to_name[curcls]] = mAPaos[j, 0, 0]
+                   # ret_dict['%s_aos/moderate' % class_to_name[curcls]] = mAPaos[j, 1, 0]
+                   # ret_dict['%s_aos/hard' % class_to_name[curcls]] = mAPaos[j, 2, 0]
 
             result += print_str(
                 (f"{class_to_name[curcls]} "
@@ -896,12 +892,9 @@ def get_official_eval_result(gt_annos, dt_annos, current_classes, PR_detail_dict
                                      f"{mAPaos_R40[j, 1, i]:.2f}, "
                                      f"{mAPaos_R40[j, 2, i]:.2f}"))
                 if i == 0:
-                    ret_dict['%s_aos/easy_R40' %
-                             class_to_name[curcls]] = mAPaos_R40[j, 0, 0]
-                    ret_dict['%s_aos/moderate_R40' %
-                             class_to_name[curcls]] = mAPaos_R40[j, 1, 0]
-                    ret_dict['%s_aos/hard_R40' %
-                             class_to_name[curcls]] = mAPaos_R40[j, 2, 0]
+                   ret_dict['%s_aos/easy_R40' % class_to_name[curcls]] = mAPaos_R40[j, 0, 0]
+                   ret_dict['%s_aos/moderate_R40' % class_to_name[curcls]] = mAPaos_R40[j, 1, 0]
+                   ret_dict['%s_aos/hard_R40' % class_to_name[curcls]] = mAPaos_R40[j, 2, 0]
 
             if i == 0:
                 # ret_dict['%s_3d/easy' % class_to_name[curcls]] = mAP3d[j, 0, 0]
@@ -914,43 +907,15 @@ def get_official_eval_result(gt_annos, dt_annos, current_classes, PR_detail_dict
                 # ret_dict['%s_image/moderate' % class_to_name[curcls]] = mAPbbox[j, 1, 0]
                 # ret_dict['%s_image/hard' % class_to_name[curcls]] = mAPbbox[j, 2, 0]
 
-                ret_dict['%s_3d/easy_R40' %
-                         class_to_name[curcls]] = mAP3d_R40[j, 0, 0]
-                ret_dict['%s_3d/moderate_R40' %
-                         class_to_name[curcls]] = mAP3d_R40[j, 1, 0]
-                ret_dict['%s_3d/hard_R40' %
-                         class_to_name[curcls]] = mAP3d_R40[j, 2, 0]
-                ret_dict['%s_bev/easy_R40' %
-                         class_to_name[curcls]] = mAPbev_R40[j, 0, 0]
-                ret_dict['%s_bev/moderate_R40' %
-                         class_to_name[curcls]] = mAPbev_R40[j, 1, 0]
-                ret_dict['%s_bev/hard_R40' %
-                         class_to_name[curcls]] = mAPbev_R40[j, 2, 0]
-                ret_dict['%s_image/easy_R40' %
-                         class_to_name[curcls]] = mAPbbox_R40[j, 0, 0]
-                ret_dict['%s_image/moderate_R40' %
-                         class_to_name[curcls]] = mAPbbox_R40[j, 1, 0]
-                ret_dict['%s_image/hard_R40' %
-                         class_to_name[curcls]] = mAPbbox_R40[j, 2, 0]
-            else:
-                ret_dict['%s_3d/easy_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAP3d_R40[j, 0, i]
-                ret_dict['%s_3d/moderate_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAP3d_R40[j, 1, i]
-                ret_dict['%s_3d/hard_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAP3d_R40[j, 2, i]
-                ret_dict['%s_bev/easy_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbev_R40[j, 0, i]
-                ret_dict['%s_bev/moderate_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbev_R40[j, 1, i]
-                ret_dict['%s_bev/hard_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbev_R40[j, 2, i]
-                ret_dict['%s_image/easy_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbbox_R40[j, 0, i]
-                ret_dict['%s_image/moderate_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbbox_R40[j, 1, i]
-                ret_dict['%s_image/hard_R40' %
-                         class_to_name[curcls] + "_" + str(i)] = mAPbbox_R40[j, 2, i]
+                ret_dict['%s_3d/easy_R40' % class_to_name[curcls]] = mAP3d_R40[j, 0, 0]
+                ret_dict['%s_3d/moderate_R40' % class_to_name[curcls]] = mAP3d_R40[j, 1, 0]
+                ret_dict['%s_3d/hard_R40' % class_to_name[curcls]] = mAP3d_R40[j, 2, 0]
+                ret_dict['%s_bev/easy_R40' % class_to_name[curcls]] = mAPbev_R40[j, 0, 0]
+                ret_dict['%s_bev/moderate_R40' % class_to_name[curcls]] = mAPbev_R40[j, 1, 0]
+                ret_dict['%s_bev/hard_R40' % class_to_name[curcls]] = mAPbev_R40[j, 2, 0]
+                ret_dict['%s_image/easy_R40' % class_to_name[curcls]] = mAPbbox_R40[j, 0, 0]
+                ret_dict['%s_image/moderate_R40' % class_to_name[curcls]] = mAPbbox_R40[j, 1, 0]
+                ret_dict['%s_image/hard_R40' % class_to_name[curcls]] = mAPbbox_R40[j, 2, 0]
 
     return result, ret_dict
 
@@ -961,7 +926,7 @@ def get_coco_eval_result(gt_annos, dt_annos, current_classes):
         1: 'Pedestrian',
         2: 'Cyclist',
         3: 'Van',
-        4: 'Person_sitting'
+        4: 'Person_sitting',
     }
     class_to_range = {
         0: [0.5, 0.95, 10],
