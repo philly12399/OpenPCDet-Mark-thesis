@@ -13,7 +13,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 set -e
 
-for ((i=starting_round; i<=20; i++)); do
+for ((i=starting_round; i<=40; i++)); do
 $SCRIPT_DIR/self_training_round_i.sh $i $processing_frames \
 $wayside_repo_path $openpcdet_repo_path $tracking_data_dir \
 $device $exp_dir $pcd_detect_script
