@@ -63,7 +63,7 @@ def main():
                     'Car/Truck_bev_0.7', 'Car/Truck_3d_0.7']
     result_types = [x.ljust(20) for x in result_types]
     result_str = ","+",".join(result_types)+"\n"
-
+    
     for st_dir in st_dirs:
         round_id = int(st_dir.split('r')[-1])
         if args.rounds is not None:
@@ -103,7 +103,7 @@ def main():
         result_str += new_str
         print(result_str)
 
-    output_dir = args.self_training_dir / 'self_training_results.csv'
+    output_dir = os.path.join(args.self_training_dir, 'self_training_results.csv')
     with open(output_dir, 'w') as f:
         f.write(result_str)
     print(result_str)
