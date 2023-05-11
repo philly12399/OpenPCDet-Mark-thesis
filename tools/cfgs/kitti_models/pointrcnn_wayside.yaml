@@ -1,7 +1,7 @@
-CLASS_NAMES: ['Car', 'Truck', 'Cyclist']
+CLASS_NAMES: ['Cyclist', 'Car', 'Truck', 'Bus']
 
 DATA_CONFIG:
-    _BASE_CONFIG_: cfgs/dataset_configs/kitti_dataset_wayside.yaml
+    _BASE_CONFIG_: cfgs/dataset_configs/kitti_dataset_pointrcnn_wayside.yaml
 
     DATA_PROCESSOR:
         -   NAME: mask_points_and_boxes_outside_range
@@ -46,9 +46,10 @@ MODEL:
             BOX_CODER_CONFIG: {
                 'use_mean_size': True,
                 'mean_size': [
-                    [3.9, 1.6, 1.56],
-                    [0.8, 0.6, 1.73],
-                    [1.76, 0.6, 1.73]
+                    [1.88, 0.87, 1.79],
+                    [4.2, 1.89, 1.65],
+                    [4.7, 1.92, 2.03],
+                    [12.23, 3.30, 3.27]
                 ]
             }
 

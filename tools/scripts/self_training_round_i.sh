@@ -42,8 +42,8 @@ cargo run --release -- -c ./refine-by-track.json5
 refined_data_path="$tracking_data_path/refined-output/supervisely"
 
 # Run module save-kitti-format to get kitti-format data
-(cd "$wayside_repo_path/rust-bin/save-kitti-format" && \
-cargo run --release -- -c "$wayside_repo_path/rust-bin/save-kitti-format/config-$device.json5" -a "$refined_data_path" -s 1 --keep-raw-points)
+# (cd "$wayside_repo_path/rust-bin/save-kitti-format" && \
+# cargo run --release -- -c "$wayside_repo_path/rust-bin/save-kitti-format/config-$device.json5" -a "$refined_data_path" -s 1 --keep-raw-points)
 
 # Prepare KITTI training data
 (
