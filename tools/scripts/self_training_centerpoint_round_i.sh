@@ -20,8 +20,8 @@ set -e
 
 # Run pcd-detect + pcd-tracking
 (
-ckpt_path="$openpcdet_repo_path/output/kitti_models/pointrcnn_ST-$device-r$(($self_training_round - 1))/default/ckpt/checkpoint_epoch_80.pth"
-python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json "$exp_dir/config/modules/pcd-detect-pointrcnn-lidar1.json5" ckpt "$ckpt_path"
+ckpt_path="$openpcdet_repo_path/output/kitti_models/centerpoint_ST-$device-r$(($self_training_round - 1))/default/ckpt/checkpoint_epoch_80.pth"
+python3 "$openpcdet_repo_path/tools/scripts/revise_json.py" revise_json "$exp_dir/config/modules/pcd-detect-centerpoint-lidar1.json5" ckpt "$ckpt_path"
 cd "$wayside_repo_path/exp/mark-exp"
 $pcd_detect_script $(($processing_frames + 2500))
 )
@@ -64,8 +64,8 @@ deactivate
 (
 source "$openpcdet_repo_path/pcdet-env/bin/activate"
 cd "$openpcdet_repo_path/tools/"
-python add_two_training_cfg_pointrcnn.py add_cfgs "../data/ST-$device-r$self_training_round"
-# python train.py --cfg_file "cfgs/kitti_models/pointrcnn_ST-$device-r$self_training_round.yaml"
-bash scripts/dist_train.sh 2 --cfg_file "cfgs/kitti_models/pointrcnn_ST-$device-r$self_training_round.yaml" --batch_size 8
+python add_two_training_cfg_centerpoint.py add_cfgs "../data/ST-$device-r$self_training_round"
+python train.py --cfg_file "cfgs/kitti_models/centerpoint_ST-$device-r$self_training_round.yaml"
+# bash scripts/dist_train.sh 2 --cfg_file "cfgs/kitti_models/pointrcnn_ST-$device-r$self_training_round.yaml" --batch_size 8
 deactivate
 )

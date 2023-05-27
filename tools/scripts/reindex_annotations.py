@@ -18,7 +18,7 @@ def reindex_annotations(src_ann_dir, dst_ann_dir, index_map, map_reverse=False):
     for src_file in src_files:
         src_index = int(src_file.split('.')[0])
         dst_index = index_map[src_index % 100000]
-        dst_file_name = f'{dst_index:06}.pcd.json'
+        dst_file_name = src_file.replace(f'{src_index:06}', f'{dst_index:06}')
 
         dst_path = os.path.join(dst_ann_dir, dst_file_name)
         print(f'copy src_file {src_file} to {dst_path}')
