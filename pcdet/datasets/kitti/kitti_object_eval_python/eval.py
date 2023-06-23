@@ -672,6 +672,12 @@ def append_merged_classes(dets, merge_class_sets):
             if k == 'frame_id' or k == 'gt_boxes_lidar' or k == 'name':
                 continue
             dets[k] = np.append(dets[k], dets[k][valid_idx], axis=0)
+
+    # Merge small, medium and large into dynamic
+    class_set = ('Small', 'Medium', 'Large')
+    for i in range(len(dets['name'])):
+        if dets['name'][i] in class_set:
+            dets['name'][i] = 'Dynamic'
     return dets
 
 
@@ -709,7 +715,7 @@ def get_range_eval_result(gt_annos,
     #     gt_annos = [filter_by_roi(anno) for anno in gt_annos]
 
     # Overwrites current_classes
-    current_classes = ['Cyclist', 'Car', 'Car/Truck', 'Truck']
+    current_classes = ['Cyclist', 'Car', 'Car/Truck', 'Truck', 'Dynamic']
 
     merge_class_sets = [('Car', 'Truck')]
 
