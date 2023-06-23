@@ -25,13 +25,16 @@ if __name__ == '__main__':
     wayside_token_map = args.wayside_token_map
     # Create index map
     index_map = {}
-    modest_train_indices = [int(x.split('.')[0]) for x in os.listdir(osp.join(modest_output_dir, 'label_2'))]
+    modest_train_indices = [int(x.split('.')[0]) for x in os.listdir(
+        osp.join(modest_output_dir, 'label_2'))]
     modest_token_map = pickle.load(open(modest_token_map, 'rb'))
     wayside_token_map = json.load(open(wayside_token_map, 'r'))
-    wayside_token_map = {v:k for k, v in wayside_token_map.items()}
-    index_map = {idx:wayside_token_map[token] for idx, token in enumerate(modest_token_map) if token in wayside_token_map and idx in modest_train_indices}
+    wayside_token_map = {v: k for k, v in wayside_token_map.items()}
+    index_map = {idx: wayside_token_map[token] for idx, token in enumerate(
+        modest_token_map) if token in wayside_token_map and idx in modest_train_indices}
 
-    output_dir = osp.join(osp.dirname(modest_output_dir), osp.basename(modest_output_dir)+'_wayside_indexed')
+    output_dir = osp.join(osp.dirname(modest_output_dir),
+                          osp.basename(modest_output_dir)+'_wayside_indexed')
     if os.path.isdir(output_dir):
         print(f"output folder {output_dir} already exists !!")
         sys.exit()
