@@ -65,11 +65,11 @@ if __name__ == '__main__':
     print(val_wayside_ids, len(val_gt_frames))
 
     with open(osp.join('params', 'train.txt'), 'w') as f:
-        output = '\n'.join(map(str, train_gt_frames))
+        output = '\n'.join([f'{x:06}' for x in train_gt_frames])
         f.write(output)
 
     with open(osp.join('params', 'val.txt'), 'w') as f:
-        output = '\n'.join(map(str, val_gt_frames))
+        output = '\n'.join([f'{x:06}' for x in val_gt_frames])
         f.write(output)
 
     # for k, v in group_counts.items():
