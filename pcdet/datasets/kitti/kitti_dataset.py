@@ -91,7 +91,7 @@ class KittiDataset(DatasetTemplate):
         if img_file.exists():
             return np.array(io.imread(img_file).shape[:2], dtype=np.int32)
         else:
-            return np.array((720, 1280), dtype=np.int32)
+            return np.array((900, 1600), dtype=np.int32)
 
     def get_label(self, idx):
         label_file = self.root_split_path / 'label_2' / ('%s.txt' % idx)
