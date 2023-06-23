@@ -684,8 +684,9 @@ def change_class_name(annos, class_change_map):
                 annos[i]['name'][j] = new_class
 
 
-def filter_by_roi(annos, x_min, y_min, x_max, y_max):
+def filter_annos_by_roi(dets, x_min, y_min, x_max, y_max):
     dets = deepcopy(dets)
+    breakpoint()
     if dets['boxes_lidar'].shape[0] == 0:
         return dets
     valid_idx = (dets['boxes_lidar'][:, 0] > x_min) * \
@@ -693,7 +694,8 @@ def filter_by_roi(annos, x_min, y_min, x_max, y_max):
         (dets['boxes_lidar'][:, 1] > y_min) * \
         (dets['boxes_lidar'][:, 1] <= y_max)
     for k in dets:
-        if k == 'frame_id' or k == 'gt_boxes_lidar':
+        if k == 'frame_id':
+            # if k == 'frame_id' or k == 'gt_boxes_lidar':
             continue
         dets[k] = dets[k][valid_idx]
     return dets
@@ -705,11 +707,18 @@ def get_range_eval_result(gt_annos,
                           PR_detail_dict=None,
                           ranges=(0, 30, 50, 80),
                           filter_by_roi=False):
-    # if filter_by_roi:
-    #     gt_annos = [filter_by_roi(anno) for anno in gt_annos]
+    if filter_by_roi:
+        x_min = -30.
+        x_max = 40.4
+        y_min = -40.
+        y_max = 40.
+        gt_annos = [filter_annos_by_roi(
+            anno, x_min, x_max, y_min, y_max) for anno in gt_annos]
+        dt_annos = [filter_annos_by_roi(
+            anno, x_min, x_max, y_min, y_max) for anno in gt_annos]
 
     # Overwrites current_classes
-    current_classes = ['Cyclist', 'Car', 'Car/Truck', 'Truck']
+    current_classes = ['Cyclist', 'Car', 'Car/Truck', 'Truck', 'Dynamic']
 
     merge_class_sets = [('Car', 'Truck')]
 
