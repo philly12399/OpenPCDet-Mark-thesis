@@ -1,7 +1,7 @@
-CLASS_NAMES: ['Dynamic']
+CLASS_NAMES: ['Small', 'Medium', 'Large']
 
 DATA_CONFIG:
-    _BASE_CONFIG_: cfgs/dataset_configs/nuscenes_kitti_format_no_augment_fixed_train_dynamic.yaml
+    _BASE_CONFIG_: cfgs/dataset_configs/nuscenes_kitti_format_improve_recall.yaml
     DATA_AUGMENTOR:
         DISABLE_AUG_LIST: ['placeholder']
         AUG_CONFIG_LIST:
@@ -61,7 +61,17 @@ MODEL:
 
         ANCHOR_GENERATOR_CONFIG: [
             {
-                'class_name': 'Dynamic',
+                'class_name': 'Small',
+                'anchor_sizes': [[1.5, 0.87, 1.79]],
+                'anchor_rotations': [0, 1.57],
+                'anchor_bottom_heights': [-0.6],
+                'align_center': False,
+                'feature_map_stride': 8,
+                'matched_threshold': 0.5,
+                'unmatched_threshold': 0.35
+            },
+            {
+                'class_name': 'Medium',
                 'anchor_sizes': [[4.5, 1.89, 1.8]],
                 'anchor_rotations': [0, 1.57],
                 'anchor_bottom_heights': [-1.78],
@@ -70,6 +80,16 @@ MODEL:
                 'matched_threshold': 0.6,
                 'unmatched_threshold': 0.45
             },
+            {
+                'class_name': 'Large',
+                'anchor_sizes': [[10.23, 3.30, 3.27]],
+                'anchor_rotations': [0, 1.57],
+                'anchor_bottom_heights': [-1.78],
+                'align_center': False,
+                'feature_map_stride': 8,
+                'matched_threshold': 0.6,
+                'unmatched_threshold': 0.45
+            }
         ]
 
         TARGET_ASSIGNER_CONFIG:

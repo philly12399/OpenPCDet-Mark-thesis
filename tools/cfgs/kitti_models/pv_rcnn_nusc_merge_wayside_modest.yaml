@@ -1,7 +1,7 @@
 CLASS_NAMES: ['Dynamic']
 
 DATA_CONFIG:
-    _BASE_CONFIG_: cfgs/dataset_configs/nuscenes_kitti_format_no_augment_fixed_train_dynamic.yaml
+    _BASE_CONFIG_: cfgs/dataset_configs/nuscenes_merge_wayside_modest.yaml
     DATA_AUGMENTOR:
         DISABLE_AUG_LIST: ['placeholder']
         AUG_CONFIG_LIST:

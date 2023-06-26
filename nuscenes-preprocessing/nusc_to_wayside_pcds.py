@@ -6,6 +6,7 @@ import numpy as np
 import itertools
 import sys
 import json
+import shutil
 from joblib import Parallel, delayed, parallel_backend
 from pyquaternion import Quaternion
 from typing import List
@@ -34,14 +35,17 @@ CLASS_MAP = {
     "truck": "Dynamic"
 }
 
+
 def is_in_roi(box_lidar_nusc: Box):
     box_lidar_nusc = box_lidar_nusc.copy()
     nu_lidar_to_kitti = Quaternion(axis=(0, 0, 1), angle=-np.pi / 2)
     box_lidar_nusc.rotate(nu_lidar_to_kitti)
     corners = box_lidar_nusc.corners().T
     min_x, max_x, min_y, max_y = -30., 40.4, -40., 40.
-    in_roi = any([c[0] > min_x and c[0] < max_x and c[1] > min_y and c[1] < max_y for c in corners])
+    in_roi = any([c[0] > min_x and c[0] < max_x and c[1] >
+                 min_y and c[1] < max_y for c in corners])
     return in_roi
+
 
 def box_to_string(name, box, bbox_2d, truncation, occlusion, alpha, instance_token):
     v = np.dot(box.rotation_matrix, np.array([1, 0, 0]))
@@ -266,8 +270,10 @@ class WaysideConverter:
         self.filter_by_fov = filter_by_fov
         self.n_sweeps = n_sweeps
         self.pcd_folder = osp.join(self.output_dir, 'pointcloud')
-        self.plane_dir = osp.expanduser(plane_dir)
-        self.roi_dir = osp.expanduser(roi_dir)
+        self.plane_dir = osp.join(self.output_dir, 'planes')
+        self.roi_dir = osp.join(self.output_dir, 'roi_params')
+        shutil.copytree(osp.expanduser(plane_dir), self.plane_dir)
+        shutil.copytree(osp.expanduser(roi_dir), self.roi_dir)
         self.kitti_dir = osp.join(self.output_dir, 'kitti_format')
         self.kitti_calib_dir = osp.join(self.kitti_dir, 'calib')
         self.kitti_label_dir = osp.join(self.kitti_dir, 'label_2')
@@ -337,7 +343,6 @@ class WaysideConverter:
             with parallel_backend("threading", n_jobs=self.parallel_n_jobs):
                 Parallel()(delayed(self.save_nusc_lidar_to_wayside_pcd_file)(idx, wayside_idx, token)
                            for idx, token in zip(sample_index_groups[wayside_idx], wayside_tokens))
-
 
     def process_token_to_kitti(self, idx, lidar_token, cam_token):
         kitti_to_nu_lidar = Quaternion(axis=(0, 0, 1), angle=np.pi / 2)
