@@ -786,6 +786,10 @@ def get_range_eval_result(gt_annos,
             gt_annos_range, dt_annos_range, current_classes, min_overlaps, compute_aos,
             PR_detail_dict=test, difficultys=[3])
 
+        if range_s == 0 and range_e == 80:
+            print(test['bev'][4])
+            print(test['3d'][4])
+
         for j, curcls in enumerate(current_classes):
             # mAP threshold array: [num_minoverlap, metric, class]
             # mAP result: [num_class, num_diff, num_minoverlap]
