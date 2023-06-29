@@ -42,7 +42,7 @@ def parse_config():
 def main():
     args, cfg = parse_config()
     st_dirs = [x for x in os.listdir(
-        args.self_training_dir) if x.startswith('pv_rcnn_ST-lidar1-r')]
+        args.self_training_dir) if x.startswith('pointrcnn_ST-lidar1-r')]
     st_dirs.sort(key=lambda x: int(x.split('r')[-1]))
 
     test_set, test_loader, sampler = build_dataloader(
