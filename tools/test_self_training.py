@@ -15,6 +15,8 @@ from pcdet.utils import common_utils
 
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
+    parser.add_argument('--model_name', type=str, default=None,
+                        help='specify the model\'s name used for finding ckpt dirs')
     parser.add_argument('--cfg_file', type=str, default=None,
                         help='specify the config for training')
     parser.add_argument('--batch_size', type=int, default=None,
@@ -42,7 +44,7 @@ def parse_config():
 def main():
     args, cfg = parse_config()
     st_dirs = [x for x in os.listdir(
-        args.self_training_dir) if x.startswith('pointrcnn_ST-lidar1-r')]
+        args.self_training_dir) if x.startswith(f'{args.model_name}_ST-lidar1-r')]
     st_dirs.sort(key=lambda x: int(x.split('r')[-1]))
 
     test_set, test_loader, sampler = build_dataloader(
@@ -63,7 +65,7 @@ def main():
                     'Car/Truck_bev_0.7', 'Car/Truck_3d_0.7']
     result_types = [x.ljust(20) for x in result_types]
     result_str = ","+",".join(result_types)+"\n"
-    
+
     for st_dir in st_dirs:
         round_id = int(st_dir.split('r')[-1])
         if args.rounds is not None:
@@ -103,7 +105,8 @@ def main():
         result_str += new_str
         print(result_str)
 
-    output_dir = os.path.join(args.self_training_dir, 'self_training_results.csv')
+    output_dir = os.path.join(args.self_training_dir,
+                              'self_training_results.csv')
     with open(output_dir, 'w') as f:
         f.write(result_str)
     print(result_str)
