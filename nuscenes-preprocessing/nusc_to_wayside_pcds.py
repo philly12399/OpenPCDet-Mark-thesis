@@ -239,7 +239,7 @@ def form_trans_mat(translation, rotation):
 
 def form_pcd_file_content(pcl: LidarPointCloud, foreground_map,  timestamp) -> str:
     n_points = pcl.points.shape[1]
-    head_str = f'# .PCD v.7 - Point Cloud Data file format\nVERSION .7\nFIELDS x y z rgb timestamp_ns device_id active\nSIZE 4 4 4 4 8 1 1\nTYPE F F F U F U U\nCOUNT 1 1 1 1 1 1 1\nWIDTH {n_points}\nHEIGHT 1\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS {n_points}\nDATA ascii\n'
+    head_str = f'# .PCD v.7 - Point Cloud Data file format\nVERSION .7\nFIELDS x y z rgb timestamp_ns device_id active\nSIZE 4 4 4 4 8 1 1\nTYPE F F F F F U U\nCOUNT 1 1 1 1 1 1 1\nWIDTH {n_points}\nHEIGHT 1\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS {n_points}\nDATA ascii\n'
     points_str = '\n'.join(
         [f'{pcl.points[0][i]:.4} {pcl.points[1][i]:.4} {pcl.points[2][i]:.4} {pcl.points[3][i]} {timestamp*1000} 1 {foreground_map[i]}' for i in range(n_points)])
     return head_str+points_str
