@@ -65,6 +65,7 @@ deactivate
 source "$openpcdet_repo_path/pcdet-env/bin/activate"
 cd "$openpcdet_repo_path/tools/"
 python add_two_training_cfg.py add_cfgs "../data/ST-$device-r$self_training_round"
-python train.py --cfg_file "cfgs/kitti_models/pv_rcnn_ST-$device-r$self_training_round.yaml" 
+# python train.py --cfg_file "cfgs/kitti_models/pv_rcnn_ST-$device-r$self_training_round.yaml"
+bash scripts/dist_train.sh 2 --cfg_file "cfgs/kitti_models/pv_rcnn_ST-$device-r$self_training_round.yaml" --batch_size 8
 deactivate
 )

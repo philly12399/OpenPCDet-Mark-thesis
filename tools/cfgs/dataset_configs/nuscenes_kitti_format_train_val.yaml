@@ -1,6 +1,8 @@
 DATASET: 'KittiDataset'
 DATA_PATH: '../data/nuscenes_wayside_train_val'
 
+CONSTANT_REFLEX: True
+
 POINT_CLOUD_RANGE: [-30, -40, -3, 40.4, 40, 1]
 
 DATA_SPLIT: {
@@ -52,7 +54,7 @@ POINT_FEATURE_ENCODING: {
 
 DATA_PROCESSOR:
     - NAME: mask_points_and_boxes_outside_range
-      REMOVE_OUTSIDE_BOXES: True
+      REMOVE_OUTSIDE_BOXES: False
 
     - NAME: shuffle_points
       SHUFFLE_ENABLED: {

@@ -2,9 +2,9 @@
 
 starting_round=$1
 processing_frames=$2
-wayside_repo_path="$HOME/wayside-portal"
-openpcdet_repo_path="$HOME/OpenPCDet-Mark-thesis"
-tracking_data_dir="/mnt/nfs/wayside_team/mark_thesis_data/139-exp-output/tracking-info/"
+wayside_repo_path="/home/yahoo55025502/wayside-portal"
+openpcdet_repo_path="/home/yahoo55025502/OpenPCDet-Mark-thesis"
+tracking_data_dir="/home/yahoo55025502/wayside-portal/exp/mark-exp/tracking-info"
 device="lidar1"
 exp_dir="$wayside_repo_path/exp/mark-exp"
 pcd_detect_script="$exp_dir/learning-based-detect-from-pcd-files-lidar1.sh"

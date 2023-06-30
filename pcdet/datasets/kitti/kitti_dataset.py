@@ -35,6 +35,8 @@ class KittiDataset(DatasetTemplate):
         self.kitti_infos = []
         self.include_kitti_data(self.mode)
 
+        self.contant_reflex = dataset_cfg.get('CONSTANT_REFLEX', False)
+
     def include_kitti_data(self, mode):
         if self.logger is not None:
             self.logger.info('Loading KITTI dataset')
@@ -69,7 +71,10 @@ class KittiDataset(DatasetTemplate):
     def get_lidar(self, idx):
         lidar_file = self.root_split_path / 'velodyne' / ('%s.bin' % idx)
         assert lidar_file.exists()
-        return np.fromfile(str(lidar_file), dtype=np.float32).reshape(-1, 4)
+        points = np.fromfile(str(lidar_file), dtype=np.float32).reshape(-1, 4)
+        if self.contant_reflex:
+            points[:, 3] = 0.
+        return points
 
     def get_image(self, idx):
         """
