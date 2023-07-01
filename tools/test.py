@@ -52,7 +52,7 @@ def parse_config():
     parser.add_argument(
         '--save_to_file', action='store_true', default=False, help='')
     parser.add_argument(
-        '--eval_range', action='store_false', default=True, help='')
+        '--eval_range', type=bool, default=True, help='')
     parser.add_argument(
         '--filter_by_roi', action='store_true', default=False, help='')
 
