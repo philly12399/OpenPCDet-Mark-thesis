@@ -645,8 +645,11 @@ def filter_det_range(dets, close, far):
     dets = deepcopy(dets)
     if dets['location'].shape[0] == 0:
         return dets
-    valid_idx = (np.abs(dets['location'][:, 2]) > close) * \
-        (np.abs(dets['location'][:, 2]) <= far)
+    dets_dist = np.array(
+        [(loc[0]**2 + loc[2]**2)**0.5 for loc in dets['location']])
+    # valid_idx = (np.abs(dets['location'][:, 2]) > close) * \
+    #     (np.abs(dets['location'][:, 2]) <= far)
+    valid_idx = (dets_dist > close) * (dets_dist <= far)
     for k in dets:
         if k == 'frame_id' or k == 'gt_boxes_lidar':
             continue
@@ -657,6 +660,10 @@ def filter_det_range(dets, close, far):
         #     print(dets[k], k)
         #     raise
     return dets
+
+
+def get_number_objects(annos):
+    return sum([len(x['location']) for x in annos])
 
 
 def append_merged_classes(dets, merge_class_sets):
@@ -776,19 +783,20 @@ def get_range_eval_result(gt_annos,
         range_pairs.append((ranges[i], ranges[i+1]))
     range_pairs.append([ranges[0], ranges[-1]])
     for range_s, range_e in range_pairs:
-
+        print(f'Range: {range_s}-{range_e}')
         dt_annos_range = [filter_det_range(
             dets, range_s, range_e) for dets in dt_annos]
         gt_annos_range = [filter_det_range(
             dets, range_s, range_e) for dets in gt_annos]
+
+        print(
+            f'Filter detected objects: {get_number_objects(dt_annos)} -> {get_number_objects(dt_annos_range)}')
+        print(
+            f'Filter ground truth objects: {get_number_objects(gt_annos)} -> {get_number_objects(gt_annos_range)}')
         test = {}
         _, _, _, _, _, mAPbev_R40, mAP3d_R40, _ = do_eval(
             gt_annos_range, dt_annos_range, current_classes, min_overlaps, compute_aos,
             PR_detail_dict=test, difficultys=[3])
-
-        if range_s == 0 and range_e == 80:
-            print(test['bev'][4])
-            print(test['3d'][4])
 
         for j, curcls in enumerate(current_classes):
             # mAP threshold array: [num_minoverlap, metric, class]

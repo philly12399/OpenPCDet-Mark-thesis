@@ -413,7 +413,7 @@ class KittiDataset(DatasetTemplate):
         eval_det_annos = copy.deepcopy(det_annos)
         eval_gt_annos = [copy.deepcopy(info['annos'])
                          for info in self.kitti_infos]
-        ranges = (0, 30, 50, 80)
+        ranges = (0, 20, 40, 80)
 
         if range_eval:
             ap_result_str, ap_dict = kitti_eval.get_range_eval_result(
