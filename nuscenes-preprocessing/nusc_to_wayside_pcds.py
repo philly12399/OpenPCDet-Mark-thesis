@@ -35,6 +35,17 @@ CLASS_MAP = {
     "truck": "Dynamic"
 }
 
+# CLASS_MAP = {
+#     "bicycle": "bicycle",
+#     "bus": "bus",
+#     "car": "car",
+#     "construction_vehicle": "construction_vehicle",
+#     "motorcycle": "motorcycle",
+#     "pedestrian": "pedestrian",
+#     "trailer": "trailer",
+#     "truck": "truck"
+# }
+
 
 def is_in_roi(box_lidar_nusc: Box):
     box_lidar_nusc = box_lidar_nusc.copy()
