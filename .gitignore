@@ -14,3 +14,6 @@ venv/
 output
 version.py
 **.vscode**
+/.install_pcdet
+/.install_torch
+/poetry.lock
