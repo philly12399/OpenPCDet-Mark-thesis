@@ -19,7 +19,7 @@ DATA_CONFIG:
         -   NAME: random_world_scaling
             WORLD_SCALE_RANGE: [0.95, 1.05]
         DISABLE_AUG_LIST: [placeholder]
-    _BASE_CONFIG_: cfgs/dataset_configs/kitti_ST-lidar1-r0.yaml
+    _BASE_CONFIG_: cfgs/dataset_configs/kitti_wayside_lidar1.yaml
 MODEL:
     BACKBONE_2D:
         LAYER_NUMS: [5, 5]
