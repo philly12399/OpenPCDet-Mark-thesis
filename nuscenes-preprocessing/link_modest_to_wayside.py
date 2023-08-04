@@ -39,7 +39,7 @@ if __name__ == '__main__':
         print(f"output folder {output_dir} already exists !!")
         sys.exit()
 
-    output_folders = ['label_2', 'calib', 'velodyne', 'image_2']
+    output_folders = ['label_2', 'calib']
     suffix_map = {
         'label_2': 'txt',
         'calib': 'txt',
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         for src_idx, dst_idx in index_map.items():
             src_name = f'{int(src_idx):06}.{suffix_map[folder]}'
             dst_name = f'{int(dst_idx):06}.{suffix_map[folder]}'
-            src_path = osp.join(osp.join(modest_output_dir, folder), src_name)
+            src_path = osp.join('../../', osp.basename(modest_output_dir), folder, src_name)
             dst_path = osp.join(osp.join(output_dir, folder), dst_name)
             print(f'linking from {src_path} to {dst_path}.')
             os.symlink(src_path, dst_path)
