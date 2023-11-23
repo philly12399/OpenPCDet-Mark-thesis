@@ -26,7 +26,6 @@ def eval_from_dataset(cfg, test_dataloader, gt_dataloader, epoch_id, logger, sav
     final_output_dir = result_dir / 'final_result' / 'data'
     if save_to_file:
         final_output_dir.mkdir(parents=True, exist_ok=True)
-
     metric = {
         'gt_num': 0,
     }
